@@ -49,6 +49,7 @@ func NewArgument() *Argument {
 		ClientArgument:   NewClientArgument(),
 		ModelArgument:    NewModelArgument(),
 		DocArgument:      NewDocArgument(),
+		DbArgument:       NewDbArgument(),
 		ApiArgument:      NewApiArgument(),
 		FallbackArgument: NewFallbackArgument(),
 	}

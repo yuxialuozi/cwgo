@@ -25,8 +25,8 @@ type DbArgument struct {
 	GenBase         bool
 }
 
-func NewDbArgument() *DocArgument {
-	return &DocArgument{}
+func NewDbArgument() *DbArgument {
+	return &DbArgument{}
 }
 
 func (d *DbArgument) ParseCli(ctx *cli.Context) error {
