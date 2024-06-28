@@ -22,6 +22,7 @@ import (
 	"github.com/cloudwego/cwgo/pkg/api_list"
 	"github.com/cloudwego/cwgo/pkg/client"
 	"github.com/cloudwego/cwgo/pkg/consts"
+	"github.com/cloudwego/cwgo/pkg/curd/db"
 	"github.com/cloudwego/cwgo/pkg/curd/doc"
 	"github.com/cloudwego/cwgo/pkg/fallback"
 	"github.com/cloudwego/cwgo/pkg/model"
@@ -93,6 +94,17 @@ func Init() *cli.App {
 					return err
 				}
 				return doc.Doc(globalArgs.DocArgument)
+			},
+		},
+		{
+			Name:  DbName,
+			Usage: DbUsage,
+			Flags: dbFlags(),
+			Action: func(c *cli.Context) error {
+				if err := globalArgs.DbArgument.ParseCli(c); err != nil {
+					return err
+				}
+				return db.Db(globalArgs.DbArgument)
 			},
 		},
 		{
@@ -189,6 +201,14 @@ Examples:
 Examples:
   # Generate doc model code
   cwgo doc --name mongodb --idl {{path/to/IDL_file.thrift}}
+`
+
+	DbName  = "db"
+	DbUsage = `generate db model
+
+Examples:
+  # Generate db model code
+  cwgo db --name mysql --idl {{path/to/IDL_file.thrift}}
 `
 
 	ApiListName = "api-list"

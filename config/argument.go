@@ -38,6 +38,7 @@ type Argument struct {
 	*ClientArgument
 	*ModelArgument
 	*DocArgument
+	*DbArgument
 	*ApiArgument
 	*FallbackArgument
 }

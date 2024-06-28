@@ -122,11 +122,12 @@ const (
 	Mod    = "mod"
 	Init   = "init"
 
-	OutDir   = "out_dir"
-	Verbose  = "verbose"
-	Template = "template"
-	Branch   = "branch"
-	Name     = "name"
+	OutDir    = "out_dir"
+	SQLDaoDir = "sql_out_dir"
+	Verbose   = "verbose"
+	Template  = "template"
+	Branch    = "branch"
+	Name      = "name"
 
 	ModelDir = "model_dir"
 	DaoDir   = "dao_dir"
