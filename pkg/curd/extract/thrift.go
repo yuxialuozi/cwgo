@@ -39,7 +39,11 @@ import (
 	"github.com/cloudwego/thriftgo/parser"
 )
 
-const bson = "bson"
+const (
+	bson   = "bson"
+	json   = "json"
+	idlTag = "idl.tag"
+)
 
 type ThriftUsedInfo struct {
 	Req         *plugin.Request
@@ -53,8 +57,10 @@ func (info *ThriftUsedInfo) ParseThriftIdl() (rawStructs []*IdlExtractStruct, er
 
 	var getGenGoFilePath func(file *parser.Thrift) error
 	getGenGoFilePath = func(file *parser.Thrift) error {
-		importPath := filepath.Join(info.DocArgs.PackagePrefix,
-			strings.ReplaceAll(file.Namespaces[0].Name, ".", consts.Slash))
+		importPath := filepath.Join(info.DbArgs.PackagePrefix, strings.ReplaceAll(file.Namespaces[0].Name, ".", consts.Slash))
+		if info.DbArgs.PackagePrefix == "" {
+			importPath = filepath.Join(info.DocArgs.PackagePrefix, strings.ReplaceAll(file.Namespaces[0].Name, ".", consts.Slash))
+		}
 		importPath = strings.ReplaceAll(importPath, consts.BackSlash, consts.Slash)
 		info.ImportPaths = append(info.ImportPaths, importPath)
 
@@ -62,6 +68,10 @@ func (info *ThriftUsedInfo) ParseThriftIdl() (rawStructs []*IdlExtractStruct, er
 			hasInterface := false
 			for _, anno := range st.Annotations {
 				if strings.Index(anno.Key, "mongo.") == 0 && len(anno.Key) > 6 {
+					hasInterface = true
+					break
+				}
+				if strings.Index(anno.Key, "mysql.") == 0 && len(anno.Key) > 6 {
 					hasInterface = true
 					break
 				}
@@ -82,10 +92,22 @@ func (info *ThriftUsedInfo) ParseThriftIdl() (rawStructs []*IdlExtractStruct, er
 							methods += anno.GetValues()[0] + "\n"
 							tokens = append(tokens, anno.Key[6:])
 						}
+						if strings.Index(anno.Key, "mysql.") == 0 {
+							methods += anno.GetValues()[0] + "\n"
+							tokens = append(tokens, anno.Key[6:])
+						}
 					}
 
-					if err = rawStruct.recordMongoIfInfo(info.DocArgs.DaoDir); err != nil {
-						return err
+					if info.DbArgs != nil {
+						if err = rawStruct.recordIfInfo(info.DbArgs.DaoDir); err != nil {
+							return err
+						}
+					}
+
+					if info.DocArgs != nil {
+						if err = rawStruct.recordIfInfo(info.DocArgs.DaoDir); err != nil {
+							return err
+						}
 					}
 
 					rawInterface := fmt.Sprintf("package main\ntype %sInterface interface{\n%s\n}", st.Name, methods)
@@ -111,7 +133,10 @@ func (info *ThriftUsedInfo) ParseThriftIdl() (rawStructs []*IdlExtractStruct, er
 func extractIdlStruct(st *parser.StructLike, file *parser.Thrift, rawStruct *IdlExtractStruct) error {
 	for _, field := range st.Fields {
 		fag := field.Annotations.Get("go.tag")
-		if len(field.Annotations) > 0 && fag != nil && strings.Contains(fag[0], bson) {
+		if fag[0] == "" {
+			fag = field.Annotations.Get("thrift.tag")
+		}
+		if len(field.Annotations) > 0 && fag != nil && (strings.Contains(fag[0], bson) || strings.Contains(fag[0], json)) {
 			tag := handleTagOmitempty(fag[0])
 
 			t := convertThriftType(field.Type, file)

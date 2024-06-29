@@ -50,9 +50,19 @@ type pbGoFileInfo struct {
 }
 
 func (info *PbUsedInfo) ParsePbIdl() (rawStructs []*IdlExtractStruct, err error) {
-	info.astFiles, info.ImportPaths, err = getPbGoFiles(info.DocArgs.ModelDir, info.DocArgs.PackagePrefix)
-	if err != nil {
-		return nil, err
+
+	if info.DocArgs != nil {
+		info.astFiles, info.ImportPaths, err = getPbGoFiles(info.DocArgs.ModelDir, info.DocArgs.PackagePrefix)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if info.DbArgs != nil {
+		info.astFiles, info.ImportPaths, err = getPbGoFiles(info.DbArgs.ModelDir, info.DbArgs.PackagePrefix)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	for _, astFile := range info.astFiles {
@@ -61,6 +71,9 @@ func (info *PbUsedInfo) ParsePbIdl() (rawStructs []*IdlExtractStruct, err error)
 				hasInterface := false
 				if stc.Doc != nil {
 					if strings.Contains(stc.Doc.Text(), "mongo.") {
+						hasInterface = true
+					}
+					if strings.Contains(stc.Doc.Text(), "mysql.") {
 						hasInterface = true
 					}
 				}
@@ -79,8 +92,16 @@ func (info *PbUsedInfo) ParsePbIdl() (rawStructs []*IdlExtractStruct, err error)
 								if len(rawStruct.StructFields) != 0 {
 									rawStructs = append(rawStructs, rawStruct)
 
-									if err = rawStruct.recordMongoIfInfo(info.DocArgs.DaoDir); err != nil {
-										return nil, err
+									if info.DbArgs != nil {
+										if err = rawStruct.recordIfInfo(info.DbArgs.DaoDir); err != nil {
+											return nil, err
+										}
+									}
+
+									if info.DocArgs != nil {
+										if err = rawStruct.recordIfInfo(info.DocArgs.DaoDir); err != nil {
+											return nil, err
+										}
 									}
 
 									tokens, methods, err := getMongoIfTag(stc.Doc.Text())
@@ -109,17 +130,22 @@ func (info *PbUsedInfo) ParsePbIdl() (rawStructs []*IdlExtractStruct, err error)
 func (info *PbUsedInfo) extractPbGoStruct(stNode *ast.StructType, rawStruct *IdlExtractStruct, astFile *ast.File) error {
 	for _, field := range stNode.Fields.List {
 		if field.Comment != nil {
-			if strings.Contains(field.Comment.Text(), "go.tag") &&
-				strings.Contains(field.Comment.Text(), bson) {
-				comment := getMongoStTag(field.Comment.Text())
-				if comment == "" {
-					return fmt.Errorf("there are grammar errors in %s", field.Comment.Text())
+			if (strings.Contains(field.Comment.Text(), idlTag) && strings.Contains(field.Comment.Text(), json)) || (strings.Contains(field.Comment.Text(), bson) && strings.Contains(field.Comment.Text(), "go.tag")) {
+				var comment string
+				if info.DocArgs != nil {
+					comment = getMongoStTag(field.Comment.Text())
+				} else if info.DbArgs != nil {
+					comment = getDbTag(field.Comment.Text())
+				} else {
+					return fmt.Errorf("both DocArgs and DbArgs are nil")
 				}
 
 				if field.Tag == nil {
 					field.Tag = &ast.BasicLit{Kind: token.STRING, Value: comment}
 				} else {
-					if !strings.Contains(field.Tag.Value, bson) {
+					if info.DocArgs != nil && !strings.Contains(field.Tag.Value, bson) {
+						field.Tag = &ast.BasicLit{Kind: token.STRING, Value: field.Tag.Value[0:len(field.Tag.Value)-1] + " " + comment + "`"}
+					} else if info.DbArgs != nil && !strings.Contains(field.Tag.Value, json) {
 						field.Tag = &ast.BasicLit{Kind: token.STRING, Value: field.Tag.Value[0:len(field.Tag.Value)-1] + " " + comment + "`"}
 					}
 				}
@@ -207,6 +233,28 @@ func (info *PbUsedInfo) extractPbGoStruct(stNode *ast.StructType, rawStruct *Idl
 
 func getMongoStTag(s string) (r string) {
 	index := strings.Index(s, "go.tag")
+	leftIndex, rightIndex := -1, -1
+	count := 0
+	for i := index; i < len(s); i++ {
+		if string(s[i]) == "|" && count == 0 {
+			leftIndex = i
+			count++
+			continue
+		}
+		if string(s[i]) == "|" && count == 1 {
+			rightIndex = i
+			count++
+		}
+	}
+	if leftIndex == -1 || rightIndex == -1 {
+		return ""
+	} else {
+		return s[leftIndex+1 : rightIndex]
+	}
+}
+
+func getDbTag(s string) (r string) {
+	index := strings.Index(s, "idl.tag")
 	leftIndex, rightIndex := -1, -1
 	count := 0
 	for i := index; i < len(s); i++ {

@@ -3,6 +3,8 @@ package plugin
 import (
 	"fmt"
 	"github.com/cloudwego/cwgo/config"
+	"github.com/cloudwego/cwgo/pkg/curd/extract"
+	"github.com/cloudwego/cwgo/pkg/curd/parse"
 	"github.com/cloudwego/hertz/cmd/hz/meta"
 	"github.com/cloudwego/hertz/cmd/hz/util/logs"
 	"github.com/cloudwego/thriftgo/plugin"
@@ -31,19 +33,34 @@ func thriftPluginRun() int {
 	return 0
 }
 
-func (plu *thriftGoPlugin) handleRequest() error {
+func (plu *thriftGoPlugin) handleRequest() int {
 	data, err := io.ReadAll(os.Stdin)
 	if err != nil {
-		return fmt.Errorf("read request failed: %s", err.Error())
+		return meta.PluginError
 	}
 
 	req, err := plugin.UnmarshalRequest(data)
 	if err != nil {
-		return fmt.Errorf("unmarshal request failed: %s", err.Error())
+		return meta.PluginError
 	}
 
-	plu.req = req
-	return nil
+	tfUsedInfo := &extract.ThriftUsedInfo{
+		Req:    plu.req,
+		DbArgs: plu.dbArgs,
+	}
+	rawStructs, err := tfUsedInfo.ParseThriftIdl()
+	if err != nil {
+		logs.Errorf("parse thrift idl failed: %s", err.Error())
+		return meta.PluginError
+	}
+
+	operations, err := parse.HandleOperations(rawStructs)
+	if err != nil {
+		logs.Error(err.Error())
+		return meta.PluginError
+	}
+
+	return 0
 }
 
 func (plu *thriftGoPlugin) parseArgs() error {

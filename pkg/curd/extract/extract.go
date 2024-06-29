@@ -81,10 +81,9 @@ func newIdlExtractStruct(name string) *IdlExtractStruct {
 	}
 }
 
-func (st *IdlExtractStruct) recordMongoIfInfo(daoDir string) error {
-	fileMongoName, fileIfName := GetFileName(st.Name, daoDir)
-
-	isExist, err := utils.PathExist(fileMongoName)
+func (st *IdlExtractStruct) recordIfInfo(daoDir string) error {
+	fileName, fileIfName := GetFileName(st.Name, daoDir)
+	isExist, err := utils.PathExist(fileName)
 	if err != nil {
 		return err
 	}
@@ -97,7 +96,7 @@ func (st *IdlExtractStruct) recordMongoIfInfo(daoDir string) error {
 
 		if isExist {
 			st.Update = true
-			st.UpdateCurdFileContent, err = utils.ReadFileContent(fileMongoName)
+			st.UpdateCurdFileContent, err = utils.ReadFileContent(fileName)
 			if err != nil {
 				return err
 			}
