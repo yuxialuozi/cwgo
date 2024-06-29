@@ -37,6 +37,7 @@ import (
 
 type PbUsedInfo struct {
 	DocArgs     *config.DocArgument
+	DbArgs      *config.DbArgument
 	astFiles    []*pbGoFileInfo
 	ImportPaths []string
 }

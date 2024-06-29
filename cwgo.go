@@ -16,9 +16,10 @@
 package main
 
 import (
+	pluginDb "github.com/cloudwego/cwgo/pkg/curd/db/mysql/plugin"
 	"os"
 
-	"github.com/cloudwego/cwgo/pkg/curd/doc/mongo/plugin"
+	pluginDoc "github.com/cloudwego/cwgo/pkg/curd/doc/mongo/plugin"
 
 	"github.com/cloudwego/cwgo/cmd/static"
 	"github.com/cloudwego/cwgo/tpl"
@@ -37,7 +38,9 @@ func main() {
 	// run cwgo as kitex plugin mode
 	kitexPluginMode()
 	// run cwgo as mongo plugin mode
-	plugin.MongoPluginMode()
+	pluginDoc.MongoPluginMode()
+	// run cwgo as mysql plugin mode
+	pluginDb.MysqlPluginMode()
 
 	tpl.Init()
 	cli := static.Init()

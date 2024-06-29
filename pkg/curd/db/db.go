@@ -6,6 +6,7 @@ import (
 	"github.com/cloudwego/cwgo/config"
 	"github.com/cloudwego/cwgo/pkg/common/utils"
 	"github.com/cloudwego/cwgo/pkg/consts"
+	"github.com/cloudwego/cwgo/pkg/curd/db/mysql/plugin"
 	"github.com/cloudwego/hertz/cmd/hz/util/logs"
 	"github.com/cloudwego/kitex/tool/internal_pkg/log"
 	"os"
@@ -21,7 +22,9 @@ func Db(c *config.DbArgument) error {
 	switch c.Name {
 	case string(consts.MySQL):
 		setLogVerbose(c.Verbose)
-
+		if err := plugin.MysqlTriggerPlugin(c); err != nil {
+			return err
+		}
 	default:
 	}
 

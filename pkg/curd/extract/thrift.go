@@ -44,6 +44,7 @@ const bson = "bson"
 type ThriftUsedInfo struct {
 	Req         *plugin.Request
 	DocArgs     *config.DocArgument
+	DbArgs      *config.DbArgument
 	ImportPaths []string
 }
 

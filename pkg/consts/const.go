@@ -29,6 +29,11 @@ const (
 )
 
 const (
+	CwgoDbPluginMode       = "CWGO_DB_PLUGIN_DOC"
+	ThriftCwgoDbPluginName = "thrift-gen-cwgo-db"
+)
+
+const (
 	HertzRepoDefaultUrl = "github.com/cloudwego/hertz"
 )
 
